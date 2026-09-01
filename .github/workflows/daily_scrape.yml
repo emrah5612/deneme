@@ -5,6 +5,10 @@ on:
     - cron: '0 3 * * *'
   workflow_dispatch:
 
+# Yazma izinlerini iş akışına açıkça tanımlıyoruz:
+permissions:
+  contents: write
+
 jobs:
   run-scraper:
     runs-on: ubuntu-latest
@@ -12,6 +16,8 @@ jobs:
     steps:
       - name: Kodu Klonla
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Python Kurulumu
         uses: actions/setup-python@v5
