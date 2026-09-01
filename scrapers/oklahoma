@@ -1,0 +1,80 @@
+import json
+import os
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
+
+class OklahomaScraper:
+    def __init__(self):
+        self.state_name = "Oklahoma"
+        self.state_code = "OK"
+        self.session = requests.Session()
+        self.session.headers.update({
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        })
+
+    def scrape_craig_county(self):
+        url = "https://craigcountyso.com/inmate-search"
+        print(f"[*] Craig County (OK) mahkum listesi cekiliyor: {url}")
+        
+        inmates = []
+        try:
+            response = self.session.get(url, timeout=20)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, "html.parser")
+                
+                # HTML yapısındaki satırları ve kartları bul
+                # Sitedeki satır bloklarını yakala
+                rows = soup.find_all("div", class_=lambda c: c and ("inmate" in c.lower() or "row" in c.lower()))
+                
+                # Eğer özel class bulunamazsa standart tablo/blok taraması:
+                if not rows:
+                    rows = soup.find_all("tr")
+
+                for row in rows:
+                    text = row.get_text(separator=" | ", strip=True)
+                    # Boş satırları veya başlıkları atla
+                    if not text or "INMATE NAME" in text.upper():
+                        continue
+                    
+                    # Veri bloklarını ayrıştır
+                    parts = [p.strip() for p in text.split("|") if p.strip()]
+                    if len(parts) >= 3:
+                        inmates.append({
+                            "raw_record": parts
+                        })
+
+                # API / JSON arayüzü kontrolü (Alternatif)
+                if not inmates:
+                    # Doğrudan elementleri seç
+                    for item in soup.select(".inmate-card, .list-group-item, table tbody tr"):
+                        cols = [td.get_text(strip=True) for td in item.find_all(["td", "div", "span"]) if td.get_text(strip=True)]
+                        if cols:
+                            inmates.append({"data": cols})
+
+        except Exception as e:
+            print(f"[!] Craig County kazinirken hata olustu: {e}")
+
+        return inmates
+
+    def run(self):
+        print(f"[*] {self.state_name} eyaleti taranıyor...")
+        craig_inmates = self.scrape_craig_county()
+
+        output = {
+            "state": self.state_name,
+            "state_code": self.state_code,
+            "county": "Craig County",
+            "source_url": "https://craigcountyso.com/inmate-search",
+            "last_updated": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "total_inmates": len(craig_inmates),
+            "inmates": craig_inmates
+        }
+
+        os.makedirs("data", exist_ok=True)
+        file_path = os.path.join("data", "oklahoma_craig.json")
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(output, f, indent=2, ensure_ascii=False)
+
+        print(f"[✓] Veriler basariyla kaydedildi: {file_path} (Toplam: {len(craig_inmates)} mahkum)")
