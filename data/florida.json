@@ -1,7 +1,7 @@
 {
   "state": "Florida",
   "state_code": "FL",
-  "last_updated": "2026-11-25 12:00:18 UTC",
+  "last_updated": "2026-11-26 11:48:41 UTC",
   "total_counties": 3,
   "counties": [
     {
@@ -12,7 +12,7 @@
       "address": "2525 NW 62nd St, Miami, FL 33147",
       "official_website": "https://www.miamidade.gov/global/corrections/home.page",
       "roster_url": "https://www.miamidade.gov/technology/inmate-search.asp",
-      "status": "broken"
+      "status": "active"
     },
     {
       "county_name": "Orange County",
